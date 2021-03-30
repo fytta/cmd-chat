@@ -9,7 +9,7 @@ public class Client {
 
 	private User user;
 	private Socket client;
-		
+	private boolean inMenu = false;
 	
 	private Socket login(String name, String host, int port) throws Exception {
 			
@@ -44,7 +44,15 @@ public class Client {
 					try {
 						Message message = (Message) receive();
 						if (!message.getName().equals(user.getName())) {
-							System.out.println(String.format("> %s: %s", message.getName(), message.getText()));	
+							
+							if (inMenu) {
+								if (message.getName().equals("Server")) {
+									System.out.println(String.format("> %s: %s", message.getName(), message.getText()));
+								}
+							}
+							else {
+								System.out.println(String.format("> %s: %s", message.getName(), message.getText()));	
+							}
 						}
 										
 					} catch (Exception e) {
@@ -73,6 +81,12 @@ public class Client {
 						
 						if (text.equals("disconnect")) {
 							System.exit(0);
+						}
+						else if (text.equals("!back")) {
+							inMenu = false;
+						}
+						else if (text.equals("!menu")) {
+							inMenu = true;
 						}
 					} catch (Exception e) {}			
 				}	
