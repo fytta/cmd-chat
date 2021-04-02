@@ -5,7 +5,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -17,9 +16,14 @@ public class Server {
 
 	private ServerSocket server;
 
-	private Map<Socket, User> clients = new HashMap<Socket, User>();
+	private Map<String, User> clients = new HashMap<String, User>();
 
 	private List<Message> messages = new ArrayList<Message>();
+	
+	public static void main(String[] args) {
+		Server server = new Server();
+		server.execute(7777);
+	}
 
 	private void execute(int port) {
 
@@ -29,101 +33,112 @@ public class Server {
 
 			Socket client;
 			while ((client = server.accept()) != null) {
-				new Thread(messageHandler(client)).start();
+				new Thread(clientHandler(client)).start();
 			}
 		} catch (IOException e) {
 			LOGGER.log(Level.SEVERE, e.getMessage(), e);
 		}
 	}
-
-	private Runnable messageHandler(Socket client) { //TODO: MANAGE NAME COLLISIONS
+	
+	private Runnable clientHandler(Socket client) {
 		return new Runnable() {
-
+			
 			@Override
-			public void run() {
-
+			public void run () {
+			
 				try {
+					String username = (String) receive(client);
+					//TODO: Check is name is valid
+					User user = new User(client, username);
+					
+					clients.put(username, user); 
+					
+					LOGGER.log(Level.INFO, "User connected: " + username);
+
+					send(client, new Message("Server", "Welcome " + username));
+					
 					Menu menu = new Menu();
-					User user = (User) receive(client);
-					clients.put(client, user);
-					LOGGER.log(Level.INFO, "User connected: " + user.getName());
-
-					send(client, new Message("Server", "Welcome " + user.getName()));
-
 					String text = "";
 
 					while (true) {
 						if (clients.size() > 0) {
 							Message message = (Message) receive(client);
 							text = message.getText();
+							
+							if (menu.isActive()) {
 
-							if (text.equals("disconnect")) {
-								sendToAll(new Message("Server", String.format("User %s has disconnected.", user.getName())));
+								String command = text.split(" ", 1)[0];
+								
+								if (command.equals("!help")) {
+									message = menu.getHelp();
+								}
+								else if (command.equals("!list-users")) {
+									message = menu.getUsersList(clients);
+								}
+								else if (command.equals("!back")) {
+									menu.setActive(false);
+									sendAllMessagesToClient(client);
+								}
+								else {
+									send(user.getClient(), new Message("Server", "Unexpected value: " + command));
+									continue;
+								}
+								send(client, message);
+							} 
+							else if (text.equals("disconnect")) {
+								sendToAll(new Message("Server", String.format("User %s has disconnected.", username)));
 								disconnectClient(client);
-								LOGGER.info(String.format("User %s disconnected.", user.getName()));
+								LOGGER.info(String.format("User %s disconnected.", username));
 							}
 							else if(text.equals("!menu")) {
 								menu.setActive(true);
+								send(user.getClient(), new Message("Server", "Welcome to the menu mode\n !help to show actions available."));
 							}
-
-							if (menu.isActive()) {
-
-								String[] command = text.split(" ");
-								menuHandler(client, menu, command);
-
-							} else {
+							else if(text.length() > 2 && text.substring(0, 3).equals("!pm")) {
+								
+								String[] command = text.split(" ", 3);
+								String mp = command[0];
+								String dest = command[1];
+								String content = command[2];
+								
+								User destUser = clients.get(dest);
+								if (destUser != null) {
+									user.setCurrentChat(destUser);
+									
+									send(destUser.getClient(), new Message(username, content, true));
+								}
+								else {
+									send(user.getClient(), new Message("Server", String.format("User %s not found.", dest), true));
+								}
+							}
+							else if(text.length() > 0 && text.substring(0, 1).equals(".")) {
+								String content = text.substring(1);
+								User dest = user.getCurrentChat();
+								
+								send(dest.getClient(), new Message(username, content, true));
+							}
+							else {
 								messages.add(message);
 								sendToAll(message);
 							}
 						}
 					}
 
-				} catch (Exception e) {
+				}
+				catch (Exception e) {
 					clients.remove(client);
 					LOGGER.log(Level.WARNING, e.getMessage(), e);
 				}
 			}
-
 		};
 	}
 	
-	private void menuHandler(Socket client, Menu menu, String[] command) throws Exception{
-		Message message;
-		switch (command[0]) {
-		case "!menu": {
-			send(client, new Message("Server",
-					"Welcome to the menu mode\n !help to show actions available."));
-			break;
-		}
-		case "!help": {
-			message = menu.getHelp();
-			send(client, message);
-			break;
-		}
-		case "!back": {
-			menu.setActive(false);
-			sendAllMessagesToClient(client);
-			break;
-		}
-		case "!list-users": {
-			message = menu.getUsersList(clients);
-			send(client, message);
-			break;
-		}
-		case "!mp": {
-			System.out.println("MP with " + command[1]);
-			break;
-		}
-		default:
-			send(client, new Message("Server", "Unexpected value: " + command[0]));
-		}	
-	}
-
 	private void sendToAll(Message message) throws Exception {
 
-		for (Map.Entry<Socket, User> entry : clients.entrySet()) {
-			send(entry.getKey(), message);
+		for (Map.Entry<String, User> entry: clients.entrySet()) {
+			send(entry.getValue().getClient(), message);
 		}
+		
 	}
 
 	private void sendAllMessagesToClient(Socket client) throws Exception {
@@ -147,11 +162,5 @@ public class Server {
 	private void disconnectClient(Socket client) throws Exception {
 		clients.remove(client);
 		client.close();
-	}
-
-	public static void main(String[] args) {
-		Server server = new Server();
-		server.execute(7777);
-		System.out.println("testing");
 	}
 }
