@@ -1,3 +1,4 @@
+package server;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -9,6 +10,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import model.Message;
+import model.User;
 
 public class Server {
 
@@ -56,7 +60,7 @@ public class Server {
 			
 				try {
 					String username = (String) receive(client);
-					//TODO: Check is name is valid
+
 					User user = new User(client, username);
 					
 					clients.put(username, user); 
@@ -123,7 +127,7 @@ public class Server {
 								String content = text.substring(1);
 								User dest = user.getCurrentChat();
 								
-								send(dest.getClient(), new Message(username, content, true));
+								if (dest != null) send(dest.getClient(), new Message(username, content, true));
 							}
 							else {
 								messages.add(message);

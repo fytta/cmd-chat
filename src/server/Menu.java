@@ -1,5 +1,8 @@
-import java.util.HashMap;
+package server;
 import java.util.Map;
+
+import model.Message;
+import model.User;
 
 public class Menu {
 	
