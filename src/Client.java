@@ -7,92 +7,10 @@ import java.util.Scanner;
 
 public class Client {
 
-	private User user;
+	private String username;
+	private String currentChat;
 	private Socket client;
 	private boolean inMenu = false;
-	
-	private Socket login(String name, String host, int port) throws Exception {
-			
-		if (name.length() < 3) {
-			throw new Exception("Error: Invalid username");
-		}
-		
-		user   = new User(name);
-		client = new Socket(host, port);
-		
-		send(user);
-		
-		return client;
-	}
-	
-	private Object receive() throws Exception {
-		ObjectInputStream ois = new ObjectInputStream(client.getInputStream());
-		return ois.readObject();
-	}
-	
-	private <T> void send(T object) throws Exception {
-		ObjectOutputStream oos = new ObjectOutputStream(client.getOutputStream());
-		oos.writeObject(object);
-	}
-	
-	private Runnable messagesHandler () {
-		return new Runnable() {
-			
-			@Override
-			public void run() {
-				while (true) {
-					try {
-						Message message = (Message) receive();
-						if (!message.getName().equals(user.getName())) {
-							
-							if (inMenu) {
-								if (message.getName().equals("Server")) {
-									System.out.println(String.format("> %s: %s", message.getName(), message.getText()));
-								}
-							}
-							else {
-								System.out.println(String.format("> %s: %s", message.getName(), message.getText()));	
-							}
-						}
-										
-					} catch (Exception e) {
-						System.out.println("Connection closed unexpectedly.");
-						System.exit(1);
-					} 
-				}	
-			}
-		};
-	}
-	
-	private Runnable senderHandler() {
-		return new Runnable() {
-			
-			@Override
-			public void run() {
-				Message message;
-				String text = "";
-				Scanner sc = new Scanner(System.in);
-				
-				while(true) {					
-					try {
-						text = sc.nextLine();
-						message = new Message(user.getName(), text);
-						send(message);
-						
-						if (text.equals("disconnect")) {
-							System.exit(0);
-						}
-						else if (text.equals("!back")) {
-							inMenu = false;
-						}
-						else if (text.equals("!menu")) {
-							inMenu = true;
-						}
-					} catch (Exception e) {}			
-				}	
-			}
-		};
-	}
 	
 	public static void main(String[] args) throws Exception {
 		
@@ -121,5 +39,102 @@ public class Client {
 			}
 		}
 	}
-
+	
+	private Socket login(String name, String host, int port) throws Exception {
+			
+		if (name.length() < 3) {
+			throw new Exception("Error: Invalid username");
+		}
+		
+		username = name;
+		client = new Socket(host, port);
+		
+		send(username);
+		
+		return client;
+	}
+	
+	private Runnable messagesHandler () {
+		return new Runnable() {
+			
+			@Override
+			public void run() {
+				while (true) {
+					try {
+						Message message = (Message) receive();
+								
+						if (!message.getName().equals(username)) {
+							
+							String messageFormatted = null;
+							
+							if (inMenu) {
+								if (message.getName().equals("Server")) {
+									messageFormatted = String.format("> %s: %s", message.getName(), message.getText()).toString();
+								}
+							}
+							else {
+								if (message.isPrivateMessage()) {
+									messageFormatted = String.format("<< %s: %s >>", message.getName(), message.getText()).toString();
+								}
+								else {
+									messageFormatted = String.format("> %s: %s", message.getName(), message.getText()).toString();
+								}
+										
+							}
+							System.out.println(messageFormatted);
+						}
+										
+					} catch (Exception e) {
+						System.out.println("Connection closed unexpectedly.");
+						System.exit(1);
+					} 
+				}	
+			}
+		};
+	}
+	
+	private Runnable senderHandler() {
+		return new Runnable() {
+			
+			@Override
+			public void run() {
+				Message message;
+				String text = "";
+				Scanner sc = new Scanner(System.in);
+				
+				while(true) {					
+					try {
+						text = sc.nextLine();
+						message = new Message(username, text);
+						send(message);
+						
+						if (text.equals("disconnect")) {
+							System.exit(0);
+						}
+						else if (text.equals("!back")) {
+							inMenu = false;
+						}
+						else if (text.equals("!menu")) {
+							inMenu = true;
+						}
+						else if (text.equals("!pm")) {
+							String dest = text.split(" ")[1];
+							currentChat = dest;
+						}
+					} catch (Exception e) {}			
+				}	
+			}
+		};
+	}
+	
+	private Object receive() throws Exception {
+		ObjectInputStream ois = new ObjectInputStream(client.getInputStream());
+		return ois.readObject();
+	}
+	
+	private <T> void send(T object) throws Exception {
+		ObjectOutputStream oos = new ObjectOutputStream(client.getOutputStream());
+		oos.writeObject(object);
+	}
+	
 }

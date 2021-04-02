@@ -1,22 +1,43 @@
+import java.net.Socket;
+import java.util.ArrayList;
+import java.util.List;
 
-import java.io.Serializable;
+public class User{
 
-public class User implements Serializable{
-
-	private static final long serialVersionUID = 5382539892804239553L;
-
-	private String name;
+	private Socket client;
 	
-	public User(String name) {
-		this.name = name;
+	private String username;
+	
+	private User currentChat;
+	
+	private List<Message> privateMessages = new ArrayList<Message>();
+	
+	public User (Socket client, String username) {
+		this.client = client;
+		this.username = username;
 	}
 
-	public String getName() {
-		return name;
+
+	public Socket getClient() {
+		return client;
 	}
 
-	public void setName(String name) {
-		this.name = name;
+	public String getUsername() {
+		return username;
+	}
+
+
+	public User getCurrentChat() {
+		return currentChat;
+	}
+
+
+	public void setCurrentChat(User currentChat) {
+		this.currentChat = currentChat;
+	}
+	
+	public void addPrivateMessage(Message message) {
+		privateMessages.add(message);
 	}
 	
 }
