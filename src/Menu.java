@@ -13,7 +13,8 @@ public class Menu {
 		sb.append("!help: Show commands available\n");
 		sb.append("!back: Go back to the general chat\n");
 		sb.append("!list-users: List the users connected.\n");
-		sb.append("!pm 'username': Send private chat with this user. You can send it from general chat.\n");
+		sb.append("!pm 'username': Send private message with this user. You can send it from general chat.\n");
+		sb.append(". 'username' : Send a private message to the last user you chatted with. You can send it from general chat.\n");
 		Message message = new Message("Server", sb.toString());
 		
 		return message;

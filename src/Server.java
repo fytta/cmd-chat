@@ -12,6 +12,7 @@ import java.util.logging.Logger;
 
 public class Server {
 
+	private static final int DEFAULT_PORT = 8080;
 	private static final Logger LOGGER = Logger.getLogger(Server.class.getName());
 
 	private ServerSocket server;
@@ -21,8 +22,15 @@ public class Server {
 	private List<Message> messages = new ArrayList<Message>();
 	
 	public static void main(String[] args) {
-		Server server = new Server();
-		server.execute(7777);
+		
+		try {
+			Server server = new Server();
+			int port = (args.length > 1) ? Integer.parseInt([0]) : DEFAULT_PORT;
+			server.execute(port);
+		}
+		catch (NumberFormatException e) {
+			throw new Exception("Invalid port. Must be an integer");
+		}
 	}
 
 	private void execute(int port) {

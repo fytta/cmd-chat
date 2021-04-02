@@ -8,16 +8,10 @@ import java.util.Scanner;
 public class Client {
 
 	private String username;
-	private String currentChat;
 	private Socket client;
 	private boolean inMenu = false;
 	
 	public static void main(String[] args) throws Exception {
-		
-		Client client = new Client();
-		String host = "localhost";
-		String name = args[0];
-		int port = 7777;
 		
 		if (args[0].equals("--help")) {
 			System.out.println(" Usage: java client username host port");
@@ -27,6 +21,11 @@ public class Client {
 		}
 		else {
 			try {
+				Client client = new Client();
+				String host = args[0];
+				String name = args[1];
+				int port = Integer.parseInt(args[2]);
+				
 				client.login(name, host, port);
 				new Thread(client.messagesHandler()).start();	
 				
@@ -35,7 +34,13 @@ public class Client {
 				new Thread(client.senderHandler()).start();
 			}
 			catch(ConnectException e) {
-				System.out.println("Server is currently unavailable.");
+				throw new Exception("Server is currently unavailable.");
+			}
+			catch(NumberFormatException e) {
+				throw new Exception("Invalid port. Must be an integer.");
+			}
+			catch(NullPointerException e) {
+				throw new Exception("Invalid parameters. Required parameters: 'username host port");
 			}
 		}
 	}
@@ -116,10 +121,6 @@ public class Client {
 						}
 						else if (text.equals("!menu")) {
 							inMenu = true;
-						}
-						else if (text.equals("!pm")) {
-							String dest = text.split(" ")[1];
-							currentChat = dest;
 						}
 					} catch (Exception e) {}			
 				}	
