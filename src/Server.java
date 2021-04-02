@@ -25,11 +25,11 @@ public class Server {
 		
 		try {
 			Server server = new Server();
-			int port = (args.length > 1) ? Integer.parseInt([0]) : DEFAULT_PORT;
+			int port = (args.length > 1) ? Integer.parseInt(args[0]) : DEFAULT_PORT;
 			server.execute(port);
 		}
 		catch (NumberFormatException e) {
-			throw new Exception("Invalid port. Must be an integer");
+			System.out.println("Invalid port. Must be an integer");
 		}
 	}
 
